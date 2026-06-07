@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>習慣トラッカー｜My Habits</title>
+<title>習慣リスト｜My Habits</title>
 
 <!-- SheetJS (Excel出力) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -164,7 +164,7 @@
 <div id="authView">
   <div class="auth-card">
     <div class="auth-logo">🌱</div>
-    <h1 class="display">習慣トラッカー</h1>
+    <h1 class="display">習慣リスト</h1>
     <p class="auth-sub">朝・昼・夜の習慣から、週・月・年の習慣まで。<br>あなたの毎日を、やさしく見える化しましょう。</p>
 
     <div id="configWarn" class="config-warn hidden">
@@ -192,7 +192,7 @@
 <div id="appView" class="hidden">
   <header>
     <div class="head-inner">
-      <div class="head-title display">🌱 習慣トラッカー</div>
+      <div class="head-title display">🌱 習慣リスト</div>
       <span id="saveDot" class="save-dot">保存しました</span>
       <div class="head-spacer"></div>
       <span id="userChip" class="user-chip"></span>
@@ -522,7 +522,7 @@ function exportExcel(){
 
   const d = new Date();
   const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
-  XLSX.writeFile(wb, `習慣トラッカー_${stamp}.xlsx`);
+  XLSX.writeFile(wb, `習慣リスト_${stamp}.xlsx`);
 }
 </script>
 </body>
