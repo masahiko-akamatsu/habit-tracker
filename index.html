@@ -72,6 +72,8 @@
   .btn-primary:disabled{opacity:.6;cursor:default;transform:none;}
   .auth-switch{text-align:center;margin-top:18px;font-size:13px;color:var(--ink-soft);}
   .auth-switch a{color:var(--monthly);font-weight:700;text-decoration:none;cursor:pointer;}
+  .auth-forgot{text-align:center;margin-top:12px;font-size:13px;}
+  .auth-forgot a{color:var(--ink-soft);text-decoration:underline;cursor:pointer;}
   .auth-msg{font-size:13px;text-align:center;margin-top:14px;min-height:18px;line-height:1.6;}
   .auth-msg.err{color:#C0594F;}
   .auth-msg.ok{color:#7FA876;}
@@ -181,6 +183,7 @@
     </div>
     <button id="submitBtn" class="btn btn-primary">ログイン</button>
     <div id="authMsg" class="auth-msg"></div>
+    <div id="forgotRow" class="auth-forgot"><a id="forgotLink">パスワードをお忘れですか？</a></div>
     <div class="auth-switch">
       <span id="switchText">アカウントをお持ちでない方は </span>
       <a id="switchLink">新規登録</a>
@@ -211,7 +214,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-  createUserWithEmailAndPassword, signOut
+  createUserWithEmailAndPassword, signOut, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, setDoc
@@ -283,6 +286,22 @@ function setMsg(text, type=""){
   el.textContent = text;
   el.className = "auth-msg" + (type ? " "+type : "");
 }
+
+$("switchLink").addEventListener("click", () => {
+  $("forgotRow").style.display = mode === "signup" ? "none" : "block";
+});
+
+$("forgotLink").addEventListener("click", async () => {
+  if (!configOK) { setMsg("先に Firebase の設定を入力してください。", "err"); return; }
+  const email = $("email").value.trim();
+  if (!email) { setMsg("再設定メールを送る先のメールアドレスを入力してから押してください。", "err"); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    setMsg("パスワード再設定用のメールを送信しました。受信トレイ（迷惑メールも）をご確認ください。", "ok");
+  } catch (err) {
+    setMsg(friendlyError(err.code), "err");
+  }
+});
 
 $("submitBtn").addEventListener("click", doAuth);
 $("password").addEventListener("keydown", e => { if(e.key==="Enter") doAuth(); });
