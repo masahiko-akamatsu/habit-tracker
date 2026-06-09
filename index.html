@@ -141,6 +141,10 @@
   .habit.done .habit-text{text-decoration:line-through;color:var(--ink-soft);}
   .del{background:none;border:none;color:#D9CFC2;cursor:pointer;font-size:17px;line-height:1;padding:2px 4px;transition:.15s;flex-shrink:0;}
   .del:hover{color:#C0594F;}
+  .move-col{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+  .move{background:none;border:none;color:#C9BFB2;cursor:pointer;font-size:10px;line-height:1;padding:1px 3px;transition:.15s;}
+  .move:hover:not(:disabled){color:var(--c);}
+  .move:disabled{opacity:.25;cursor:default;}
   .empty{font-size:12px;color:#C9BFB2;text-align:center;padding:6px 0;}
 
   .add-row{display:flex;gap:8px;}
@@ -454,7 +458,7 @@ function buildCard(cat){
     e.textContent = "まだ習慣がありません";
     ul.appendChild(e);
   }
-  list.forEach((h) => ul.appendChild(buildHabit(cat, h)));
+  list.forEach((h, i) => ul.appendChild(buildHabit(cat, h, i, list.length)));
   card.appendChild(ul);
 
   // 追加行
@@ -483,7 +487,7 @@ function buildCard(cat){
   return card;
 }
 
-function buildHabit(cat, h){
+function buildHabit(cat, h, idx, total){
   const row = document.createElement("div");
   row.className = "habit" + (h.done ? " done":"");
 
@@ -500,6 +504,20 @@ function buildHabit(cat, h){
   text.value = h.text;
   text.addEventListener("input", () => { h.text = text.value; saveData(); });
 
+  // 並べ替え（上へ／下へ）
+  const moveCol = document.createElement("div");
+  moveCol.className = "move-col";
+  const up = document.createElement("button");
+  up.className = "move"; up.textContent = "▲"; up.title = "上へ";
+  up.disabled = idx === 0;
+  up.addEventListener("click", () => moveItem(cat, h.id, -1));
+  const down = document.createElement("button");
+  down.className = "move"; down.textContent = "▼"; down.title = "下へ";
+  down.disabled = idx === total - 1;
+  down.addEventListener("click", () => moveItem(cat, h.id, 1));
+  moveCol.appendChild(up);
+  moveCol.appendChild(down);
+
   const del = document.createElement("button");
   del.className = "del";
   del.textContent = "×";
@@ -511,8 +529,21 @@ function buildHabit(cat, h){
 
   row.appendChild(check);
   row.appendChild(text);
+  row.appendChild(moveCol);
   row.appendChild(del);
   return row;
+}
+
+function moveItem(cat, id, dir){
+  const arr = data[cat.key];
+  const i = arr.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
+  saveData();
+  render();
 }
 
 /* ============================================================
