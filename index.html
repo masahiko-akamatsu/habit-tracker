@@ -141,10 +141,14 @@
   .habit.done .habit-text{text-decoration:line-through;color:var(--ink-soft);}
   .del{background:none;border:none;color:#D9CFC2;cursor:pointer;font-size:17px;line-height:1;padding:2px 4px;transition:.15s;flex-shrink:0;}
   .del:hover{color:#C0594F;}
-  .drag-handle{cursor:grab;color:#C9BFB2;font-size:15px;line-height:1;padding:0 2px;flex-shrink:0;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .drag-handle{cursor:grab;color:#B8AE9F;font-size:18px;line-height:1;padding:4px 5px;flex-shrink:0;touch-action:none;user-select:none;-webkit-user-select:none;}
   .drag-handle:hover{color:var(--c);}
   .drag-handle:active{cursor:grabbing;}
   .habit.dragging{opacity:.55;background:var(--c-bg);border-color:var(--c);}
+  .move-col{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+  .move{background:none;border:none;color:#C9BFB2;cursor:pointer;font-size:10px;line-height:1;padding:1px 3px;transition:.15s;}
+  .move:hover:not(:disabled){color:var(--c);}
+  .move:disabled{opacity:.25;cursor:default;}
   .empty{font-size:12px;color:#C9BFB2;text-align:center;padding:6px 0;}
 
   .add-row{display:flex;gap:8px;}
@@ -458,7 +462,7 @@ function buildCard(cat){
     e.textContent = "まだ習慣がありません";
     ul.appendChild(e);
   }
-  list.forEach((h) => ul.appendChild(buildHabit(cat, h)));
+  list.forEach((h, i) => ul.appendChild(buildHabit(cat, h, i, list.length)));
   makeSortable(ul, cat.key);
   card.appendChild(ul);
 
@@ -488,7 +492,7 @@ function buildCard(cat){
   return card;
 }
 
-function buildHabit(cat, h){
+function buildHabit(cat, h, idx, total){
   const row = document.createElement("div");
   row.className = "habit" + (h.done ? " done":"");
   row.dataset.id = h.id;
@@ -512,6 +516,20 @@ function buildHabit(cat, h){
   handle.textContent = "⠿";
   handle.title = "ドラッグして並べ替え";
 
+  // 並べ替えボタン（上へ／下へ）
+  const moveCol = document.createElement("div");
+  moveCol.className = "move-col";
+  const up = document.createElement("button");
+  up.className = "move"; up.textContent = "▲"; up.title = "上へ";
+  up.disabled = idx === 0;
+  up.addEventListener("click", () => moveItem(cat, h.id, -1));
+  const down = document.createElement("button");
+  down.className = "move"; down.textContent = "▼"; down.title = "下へ";
+  down.disabled = idx === total - 1;
+  down.addEventListener("click", () => moveItem(cat, h.id, 1));
+  moveCol.appendChild(up);
+  moveCol.appendChild(down);
+
   const del = document.createElement("button");
   del.className = "del";
   del.textContent = "×";
@@ -524,6 +542,7 @@ function buildHabit(cat, h){
   row.appendChild(handle);
   row.appendChild(check);
   row.appendChild(text);
+  row.appendChild(moveCol);
   row.appendChild(del);
   return row;
 }
@@ -532,42 +551,47 @@ function makeSortable(listEl, catKey){
   listEl.querySelectorAll(".habit").forEach(row => {
     const handle = row.querySelector(".drag-handle");
     if (!handle) return;
-    let dragging = false, pid = null;
-
     handle.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      dragging = true;
-      pid = e.pointerId;
-      handle.setPointerCapture(pid);
       row.classList.add("dragging");
-    });
 
-    handle.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
-      e.preventDefault();
-      const others = [...listEl.querySelectorAll(".habit:not(.dragging)")];
-      let next = null;
-      for (const r of others) {
-        const box = r.getBoundingClientRect();
-        if (e.clientY < box.top + box.height / 2) { next = r; break; }
-      }
-      if (next) listEl.insertBefore(row, next);
-      else listEl.appendChild(row);
+      const onMove = (ev) => {
+        const others = [...listEl.querySelectorAll(".habit:not(.dragging)")];
+        let next = null;
+        for (const r of others) {
+          const box = r.getBoundingClientRect();
+          if (ev.clientY < box.top + box.height / 2) { next = r; break; }
+        }
+        if (next) listEl.insertBefore(row, next);
+        else listEl.appendChild(row);
+      };
+      const onUp = () => {
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        document.removeEventListener("pointercancel", onUp);
+        row.classList.remove("dragging");
+        const ids = [...listEl.querySelectorAll(".habit")].map(r => r.dataset.id);
+        data[catKey].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+        saveData();
+        render();
+      };
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+      document.addEventListener("pointercancel", onUp);
     });
-
-    const finish = () => {
-      if (!dragging) return;
-      dragging = false;
-      try { handle.releasePointerCapture(pid); } catch (_) {}
-      row.classList.remove("dragging");
-      const ids = [...listEl.querySelectorAll(".habit")].map(r => r.dataset.id);
-      data[catKey].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-      saveData();
-      render();
-    };
-    handle.addEventListener("pointerup", finish);
-    handle.addEventListener("pointercancel", finish);
   });
+}
+
+function moveItem(cat, id, dir){
+  const arr = data[cat.key];
+  const i = arr.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
+  saveData();
+  render();
 }
 
 /* ============================================================
