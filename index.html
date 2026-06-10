@@ -207,6 +207,7 @@
       <span id="saveDot" class="save-dot">保存しました</span>
       <div class="head-spacer"></div>
       <span id="userChip" class="user-chip"></span>
+      <button id="resetBtn" class="btn-ghost">⟲ 全てOFF</button>
       <button id="excelBtn" class="btn-ghost btn-excel">⬇ Excel出力</button>
       <button id="logoutBtn" class="btn-ghost">ログアウト</button>
     </div>
@@ -598,6 +599,28 @@ function moveItem(cat, id, dir){
    Excel出力（SheetJS）
    ============================================================ */
 $("excelBtn").addEventListener("click", exportExcel);
+
+/* ============================================================
+   チェックを全てOFF（一括解除）
+   ============================================================ */
+$("resetBtn").addEventListener("click", resetAllChecks);
+
+function resetAllChecks(){
+  let count = 0;
+  CATEGORIES.forEach(cat => {
+    (data[cat.key] || []).forEach(h => { if (h.done) count++; });
+  });
+  if (count === 0){
+    alert("チェックが入っている習慣はありません。");
+    return;
+  }
+  if (!confirm("チェックが入っている " + count + " 件をすべてOFFにします。よろしいですか？")) return;
+  CATEGORIES.forEach(cat => {
+    (data[cat.key] || []).forEach(h => { h.done = false; });
+  });
+  saveData();
+  render();
+}
 
 function exportExcel(){
   const rows = [["カテゴリー", "習慣", "状態"]];
