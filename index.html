@@ -6,7 +6,7 @@
 <title>習慣リスト｜My Habits</title>
 
 <!-- SheetJS (Excel出力) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -623,20 +623,56 @@ function resetAllChecks(){
 }
 
 function exportExcel(){
+  const FILLS = {
+    morning: "FFFFFFCC",
+    noon:    "FFFFCCFF",
+    night:   "FF66CCFF",
+    weekly:  "FFCCFFFF",
+    monthly: "FFCCCCFF",
+    yearly:  "FFFFCCCC"
+  };
+  const FONT = { name: "ＭＳ Ｐゴシック", sz: 12 };
+  const BORDER = {
+    top:    { style:"thin", color:{ rgb:"FF000000" } },
+    bottom: { style:"thin", color:{ rgb:"FF000000" } },
+    left:   { style:"thin", color:{ rgb:"FF000000" } },
+    right:  { style:"thin", color:{ rgb:"FF000000" } }
+  };
+
   const rows = [["カテゴリー", "習慣", "状態"]];
+  const fillMeta = [null];
   CATEGORIES.forEach(cat => {
-    const list = data[cat.key];
+    const list = data[cat.key] || [];
     if (list.length === 0){
       rows.push([cat.label, "", ""]);
+      fillMeta.push(FILLS[cat.key]);
     } else {
       list.forEach(h => {
-        rows.push([cat.label, h.text, h.done ? "✓ 達成" : "未"]);
+        rows.push([cat.label, h.text, h.done ? "☑" : "□"]);
+        fillMeta.push(FILLS[cat.key]);
       });
     }
   });
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws["!cols"] = [{ wch:14 }, { wch:46 }, { wch:10 }];
+
+  for (let r = 0; r < rows.length; r++){
+    for (let c = 0; c < 3; c++){
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      if (!cell) continue;
+      const s = { font: FONT, border: BORDER };
+      if (r === 0){
+        s.alignment = { horizontal:"center", vertical:"center" };
+      } else {
+        s.fill = { patternType:"solid", fgColor:{ rgb: fillMeta[r] } };
+        s.alignment = (c === 0 || c === 2)
+          ? { horizontal:"center", vertical:"center" }
+          : { vertical:"center" };
+      }
+      cell.s = s;
+    }
+  }
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "習慣一覧");
