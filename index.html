@@ -130,6 +130,14 @@
   .card-progress{height:7px;background:var(--line);border-radius:999px;overflow:hidden;}
   .card-progress-fill{height:100%;background:var(--c);border-radius:999px;transition:width .35s ease;}
 
+  .daily-rate{display:flex;align-items:center;gap:7px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 12px;}
+  .daily-rate .dr-label{font-size:11px;color:var(--ink-soft);font-weight:700;}
+  .daily-rate .dr-pct{font-size:14px;font-weight:800;color:var(--morning);}
+  .daily-rate .dr-frac{font-size:11px;color:var(--ink-soft);}
+  .daily-rate .dr-bar{width:64px;height:6px;background:var(--line);border-radius:999px;overflow:hidden;display:inline-block;}
+  .daily-rate .dr-bar-fill{display:block;height:100%;background:var(--morning);border-radius:999px;transition:width .35s ease;}
+  @media(max-width:760px){ .daily-rate .dr-bar{display:none;} .daily-rate{padding:4px 10px;} }
+
   .habit-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;min-height:8px;}
   .habit{
     display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;
@@ -210,6 +218,7 @@
   <header>
     <div class="head-inner">
       <div class="head-title display">🌱 習慣リスト</div>
+      <div id="dailyRate" class="daily-rate" aria-live="polite"></div>
       <span id="saveDot" class="save-dot">保存しました</span>
       <div class="head-spacer"></div>
       <span id="userChip" class="user-chip"></span>
@@ -442,6 +451,24 @@ function render(){
     }
     cardsWrap.appendChild(buildCard(cat));
   });
+
+  updateDailyRate();
+}
+
+function updateDailyRate(){
+  const el = $("dailyRate");
+  if (!el) return;
+  let done = 0, total = 0;
+  ["morning","noon","night"].forEach(k => {
+    (data[k] || []).forEach(h => { total++; if (h.done) done++; });
+  });
+  const rate = total ? Math.round(done / total * 100) : 0;
+  const pct = total ? rate + "%" : "—";
+  el.innerHTML = `
+    <span class="dr-label">1日の達成率</span>
+    <span class="dr-pct">${pct}</span>
+    <span class="dr-frac">(${done}/${total})</span>
+    <span class="dr-bar"><span class="dr-bar-fill" style="width:${rate}%"></span></span>`;
 }
 
 function buildCard(cat){
@@ -460,8 +487,8 @@ function buildCard(cat){
     <div class="card-count">${list.length}件</div>`;
   card.appendChild(head);
 
-  // 達成率（朝・昼・夜のみ）
-  if (["morning","noon","night"].includes(cat.key)){
+  // 達成率（全カテゴリー：習慣がある場合のみ）
+  if (list.length > 0){
     const done = list.filter(h => h.done).length;
     const rate = list.length ? Math.round(done / list.length * 100) : 0;
     const rw = document.createElement("div");
